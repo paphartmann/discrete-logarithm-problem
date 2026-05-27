@@ -1,0 +1,6 @@
+[package]
+name = "pollard-rho"
+edition = "2024"
+
+[dependencies]
+num-bigint = "0.4.6"
