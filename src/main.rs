@@ -1,40 +1,37 @@
 use num_bigint::*;
 
-use crate::{file::parameters, problem::Problem};
+use crate::file::parameters;
 
 mod file;
-mod problem;
 
-fn next_xi(xi: &BigUint, params: &Problem) -> BigUint {
-    let remainder = xi % 3u8;
-    if remainder == BigUint::ZERO {
-        &params.a_public_exp * xi
-    } else if remainder == BigUint::from(1u8) {
-        xi * xi
-    } else {
-        &params.alpha_generator * xi
-    }
-}
+fn step(
+    x: BigUint,
+    a: BigUint,
+    b: BigUint,
+    p: &BigUint,
+    pub_a: &BigUint,
+    alpha: &BigUint,
+    q: &BigUint,
+) -> (BigUint, BigUint, BigUint) {
+    let remainder = &x % 3u8;
 
-fn next_ai(ai: BigUint, xi: &BigUint, params: &Problem) -> BigUint {
-    let remainder = xi % 3u8;
     if remainder == BigUint::ZERO {
-        ai
-    } else if remainder == BigUint::from(1u8) {
-        (ai << 1) % &params.prime_modulus
-    } else {
-        (ai + 1u8) % &params.prime_modulus
-    }
-}
+        let x_next = (pub_a * &x) % p;
+        let a_next = a;
+        let b_next = (b + 1u8) % q;
+        (x_next, a_next, b_next)
 
-fn next_bi(bi: BigUint, xi: &BigUint, params: &Problem) -> BigUint {
-    let remainder = xi % 3u8;
-    if remainder == BigUint::ZERO {
-        (bi + 1u8) % &params.prime_modulus
     } else if remainder == BigUint::from(1u8) {
-        (bi << 1) % &params.prime_modulus
+        let x_next = (&x * &x) % p;
+        let a_next = (a << 1u8) % q;
+        let b_next = (b << 1u8) % q;
+        (x_next, a_next, b_next)
+
     } else {
-        bi
+        let x_next = (alpha * &x) % p;
+        let a_next = (a + 1u8) % q;
+        let b_next = b;
+        (x_next, a_next, b_next)
     }
 }
 
@@ -45,37 +42,64 @@ fn main() {
     }
 
     let number_problem = number_problem_str.into_string().unwrap().parse::<u32>().unwrap();
-    let params = parameters(number_problem, "desafios.txt".to_string());
+    let (p, alpha, pub_a, pub_b) = parameters(number_problem, "desafios.txt".to_string());
+    let q = (&p - 1u8) / 2u8;
+    let n = &p - 1u8;
+    let mut inv_r_option: Option<BigUint> = None;
+    
+    let mut x: BigUint;
+    let mut a: BigUint = BigUint::ZERO;// compiler wouldnt compile if not initialized
+    let mut b: BigUint;
+    let mut x2: BigUint;
+    let mut a2: BigUint = BigUint::ZERO;
+    let mut b2: BigUint;
 
-    let mut ai = BigUint::ZERO;
-    let mut bi = ai.clone();
-    let mut xi = bi.clone() + 1u32;
-    let mut xii = xi.clone();
-    let mut aii = ai.clone();
-    let mut bii = bi.clone();
+    for i in 1.. {
+        a = i.to_biguint().unwrap();
+        b = i.to_biguint().unwrap();
+        x = alpha.modpow(&a, &q) * pub_a.modpow(&b, &q);
 
-    loop {
-        ai = next_ai(ai, &xi, &params);
-        bi = next_bi(bi, &xi, &params);
-        xi = next_xi(&xi, &params);
+        x2 = x.clone();
+        a2 = a.clone();
+        b2 = b.clone();
 
-        
-        aii = next_ai(aii, &xii, &params);
-        bii = next_bi(bii, &xii, &params);
-        xii = next_xi(&xii, &params);
-        aii = next_ai(aii, &xii, &params);
-        bii = next_bi(bii, &xii, &params);
-        xii = next_xi(&xii, &params);
+        loop {
+            (x, a, b) = step(x, a, b, &p, &pub_a, &alpha, &q);
 
-        if xi == xii {
+            (x2, a2, b2) = step(x2, a2, b2, &p, &pub_a, &alpha, &q);
+            (x2, a2, b2) = step(x2, a2, b2, &p, &pub_a, &alpha, &q);
+
+            if x == x2 {
+                break;
+            }
+        }
+
+        let r = if b >= b2 {
+            (&b - &b2) % &n
+        } else {
+            (&n + &b - &b2) % &n
+        };
+        if r == BigUint::ZERO {
+            panic!("r == 0")
+        }
+        inv_r_option = r.modinv(&n);
+        if inv_r_option == None {
+            println!("r doesnt have an inverse");
+            println!("r == {}", r);
+            println!("x == {}, x2 == {}", x, x2);
+            println!("a == {}, a2 == {}", a, a2);
+            println!("b == {}, b2 == {}", b, b2);
+            // panic!()
+        } else {
             break;
         }
     }
-    let r = bi - bii;
-    if r.eq(&BigUint::ZERO) {
-        panic!("r == 0")
-    }
-    let inv_r = r.modinv(&params.prime_modulus).unwrap();
-    let alice_private_key = (inv_r * (aii - ai)) % &params.prime_modulus;
-    println!("k_ab = {}", &params.b_public_exp.modpow(&alice_private_key, &params.prime_modulus))
+    let inv_r = inv_r_option.unwrap();
+    let delta_a = if a2 >= a {
+        (&a2 - &a) % &n
+    } else {
+        (&n + &a2 - &a) % &n
+    };
+    let alice_private_key = (inv_r * delta_a) % &n;
+    println!("k_ab = {}", pub_b.modpow(&alice_private_key, &p))
 }
