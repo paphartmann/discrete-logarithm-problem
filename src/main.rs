@@ -8,7 +8,7 @@ mod problem;
 fn next_xi(xi: &BigUint, params: &Problem) -> BigUint {
     let remainder = xi % 3u8;
     if remainder == BigUint::ZERO {
-        &params.b_public_exp * xi
+        &params.a_public_exp * xi
     } else if remainder == BigUint::from(1u8) {
         xi * xi
     } else {
