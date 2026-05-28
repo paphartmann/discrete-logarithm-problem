@@ -3,7 +3,7 @@ use num_bigint::*;
 
 use super::problem::Problem;
 
-fn parse_value(line: &str) -> BigInt {
+fn parse_value(line: &str) -> BigUint {
     line.split_once('=')
         .unwrap()
         .1
