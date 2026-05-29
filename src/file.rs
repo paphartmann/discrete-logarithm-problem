@@ -10,7 +10,7 @@ fn parse_value(line: &str) -> BigUint {
         .unwrap()
 }
 
-pub fn parameters(problem_number: u32, filepath: String) -> (BigUint, BigUint, BigUint, BigUint) {
+pub fn parameters(problem_number: u32, filepath: &str) -> (BigUint, BigUint, BigUint, BigUint) {
     let prefix = format!("[C{problem_number}]");
     let content = fs::read_to_string(filepath).unwrap();
     let mut file_it = content.lines().skip_while(|s| {!s.starts_with(&prefix)});
