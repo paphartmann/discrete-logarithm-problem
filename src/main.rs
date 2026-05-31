@@ -2,13 +2,12 @@ use num_bigint::*;
 use rayon::prelude::*;
 use std::hash::*;
 use std::vec::*;
+use num_bigint::BigUint;
+use num_traits::ToPrimitive;
 
 use crate::file::parameters;
 
 mod file;
-
-use num_bigint::BigUint;
-use num_traits::{One, Zero};
 
 fn step(
     x: &mut BigUint,
@@ -17,8 +16,8 @@ fn step(
     p: &BigUint,
     pub_a: &BigUint,
     alpha: &BigUint,
-    q: &BigUint,) {
-    let remainder = x.iter_u32_digits().next().unwrap_or(0) % 3;
+    q: &BigUint) {
+    let remainder = (&*x % 3u8).to_u8().unwrap();
 
     match remainder {
         0 => {
@@ -32,8 +31,7 @@ fn step(
         }
 
         1 => {
-            let old_x = x.clone();
-            *x *= &old_x;
+            *x = &*x * &*x;
             *x %= p;
 
             *a <<= 1;
@@ -78,6 +76,7 @@ fn prime_factors(mut n: BigUint) -> Vec<BigUint> {
 
     factors
 }
+
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
     for q in prime_factors(n.clone()) {
