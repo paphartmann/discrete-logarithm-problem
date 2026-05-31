@@ -72,6 +72,7 @@ name = "pollard-rho"
 version = "0.0.0"
 dependencies = [
  "num-bigint",
+ "num-traits",
  "rayon",
 ]
 

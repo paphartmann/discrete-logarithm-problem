@@ -7,34 +7,56 @@ use crate::file::parameters;
 
 mod file;
 
+use num_bigint::BigUint;
+use num_traits::{One, Zero};
+
 fn step(
-    x: BigUint,
-    a: BigUint,
-    b: BigUint,
+    x: &mut BigUint,
+    a: &mut BigUint,
+    b: &mut BigUint,
     p: &BigUint,
     pub_a: &BigUint,
     alpha: &BigUint,
-    q: &BigUint,
-) -> (BigUint, BigUint, BigUint) {
-    let remainder = &x % 3u8;
+    q: &BigUint,) {
+    let remainder = x.iter_u32_digits().next().unwrap_or(0) % 3;
 
-    if remainder == BigUint::ZERO {
-        let x_next = (pub_a * &x) % p;
-        let a_next = a;
-        let b_next = (b + 1u8) % q;
-        (x_next, a_next, b_next)
+    match remainder {
+        0 => {
+            *x *= pub_a;
+            *x %= p;
 
-    } else if remainder == BigUint::from(1u8) {
-        let x_next = (&x * &x) % p;
-        let a_next = (a << 1) % q;
-        let b_next = (b << 1) % q;
-        (x_next, a_next, b_next)
+            *b += 1u8;
+            if *b == *q {
+                *b = BigUint::ZERO;
+            }
+        }
 
-    } else {
-        let x_next = (alpha * &x) % p;
-        let a_next = (a + 1u8) % q;
-        let b_next = b;
-        (x_next, a_next, b_next)
+        1 => {
+            let old_x = x.clone();
+            *x *= &old_x;
+            *x %= p;
+
+            *a <<= 1;
+            if *a >= *q {
+                *a -= q;
+            }
+
+            *b <<= 1;
+            if *b >= *q {
+                *b -= q;
+            }
+        }
+
+        2 => {
+            *x *= alpha;
+            *x %= p;
+
+            *a += 1u8;
+            if *a == *q {
+                *a = BigUint::ZERO;
+            }
+        }
+        _ => unreachable!()
     }
 }
 
@@ -96,10 +118,10 @@ fn try_seed(
     let mut b2 = b.clone();
 
     loop {
-        (x, a, b) = step(x, a, b, p, pub_a, alpha, n);
+        step(&mut x, &mut a, &mut b, p, pub_a, alpha, n);
 
-        (x2, a2, b2) = step(x2, a2, b2, p, pub_a, alpha, n);
-        (x2, a2, b2) = step(x2, a2, b2, p, pub_a, alpha, n);
+        step(&mut x2, &mut a2, &mut b2, p, pub_a, alpha, n);
+        step(&mut x2, &mut a2, &mut b2, p, pub_a, alpha, n);
 
         if x == x2 {
             break;
