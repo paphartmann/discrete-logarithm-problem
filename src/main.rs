@@ -1,13 +1,17 @@
 use num_bigint::*;
 use rayon::prelude::*;
 use std::hash::*;
+use std::time::Instant;
 use std::vec::*;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::file::parameters;
 
 mod file;
+
+static STOP: AtomicBool = AtomicBool::new(false);
 
 fn step(
     x: &mut BigUint,
@@ -90,7 +94,8 @@ fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
 }
 
 fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
-    if a >= b {
+    debug_assert!(BigUint::ZERO <= *a && a < n && BigUint::ZERO <= *b && a < n);
+    if a > b {
         a - b
     } else {
         n - (b - a)
@@ -105,29 +110,32 @@ fn try_seed(
     pub_b: &BigUint,
     n: &BigUint,
 ) -> Option<BigUint> {
+    // println!("{i}");
     let mut hasher = DefaultHasher::new();
     hasher.write_u64(i);
-    let mut a = hasher.finish().to_biguint()? % n;
+    let mut ai = hasher.finish().to_biguint()? % n;
     hasher.write_u64(1);
-    let mut b = hasher.finish().to_biguint()? % n;
-    let mut x = (alpha.modpow(&a, p) * pub_a.modpow(&b, p)) % p;
+    let mut bi = hasher.finish().to_biguint()? % n;
+    let mut xi = (alpha.modpow(&ai, p) * pub_a.modpow(&bi, p)) % p;
 
-    let mut x2 = x.clone();
-    let mut a2 = a.clone();
-    let mut b2 = b.clone();
+    let mut x2i = xi.clone();
+    let mut a2i = ai.clone();
+    let mut b2i = bi.clone();
 
     loop {
-        step(&mut x, &mut a, &mut b, p, pub_a, alpha, n);
+        step(&mut xi, &mut ai, &mut bi, p, pub_a, alpha, n);
 
-        step(&mut x2, &mut a2, &mut b2, p, pub_a, alpha, n);
-        step(&mut x2, &mut a2, &mut b2, p, pub_a, alpha, n);
+        step(&mut x2i, &mut a2i, &mut b2i, p, pub_a, alpha, n);
+        step(&mut x2i, &mut a2i, &mut b2i, p, pub_a, alpha, n);
 
-        if x == x2 {
+        if xi == x2i {
             break;
+        } else if STOP.load(Ordering::Relaxed) {
+            return None
         }
     }
 
-    let r = sub_mod(&b, &b2, n);
+    let r = sub_mod(&bi, &b2i, n);
 
     if r == BigUint::ZERO {
         return None;
@@ -135,15 +143,15 @@ fn try_seed(
 
     let r_inv = r.modinv(n)?;
 
-    let priv_key = (r_inv * sub_mod(&a2, &a, n)) % n;
+    let a_priv_key = (r_inv * sub_mod(&a2i, &ai, n)) % n;
 
-    if alpha.modpow(&priv_key, p) != *pub_a {
+    if alpha.modpow(&a_priv_key, p) != *pub_a {
         None
     } else {
-        Some(pub_b.modpow(&priv_key, p))
+        STOP.store(true, Ordering::Relaxed);
+        Some(pub_b.modpow(&a_priv_key, p))
     }
 }
-
 
 fn main() {
     let number_problem_str = std::env::args_os().nth(1).unwrap_or_default();
@@ -155,16 +163,22 @@ fn main() {
     let (p, alpha, pub_a, pub_b) = parameters(number_problem, "desafios.txt");
     println!("p\t= {p}");
     println!("alpha\t= {alpha}");
-    println!("pub_a\t= {pub_a}");
-    println!("pub_b\t= {pub_b}");
+    println!("A\t= {pub_a}");
+    println!("B\t= {pub_b}");
+
+    let begin = Instant::now();
+
     let n = ord(&alpha, &p);
     println!("ord\t= {n}");
     
     let result = (1u64..u64::MAX)
         .into_par_iter()
-        .find_map_first(|i| {
+        .find_map_any(|i| {
             try_seed(i, &p, &alpha, &pub_a, &pub_b, &n)
         });
 
+    let end = Instant::now();
+
     println!("k_ab\t= {}", result.unwrap());
+    println!("It took {} minutes", (end - begin).as_secs_f32() / 60.0)
 }
