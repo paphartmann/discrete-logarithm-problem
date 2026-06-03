@@ -1,9 +1,8 @@
-use miller_rabin::is_prime;
+use num_prime::nt_funcs::factorize;
 use num_bigint::*;
 use rayon::prelude::*;
 use std::hash::*;
 use std::time::Instant;
-use std::collections::BTreeMap;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -63,58 +62,9 @@ fn step(
     }
 }
 
-fn gcd(a: BigUint, b: BigUint) -> BigUint {
-    if &b == &BigUint::ZERO {
-        a
-    } else {
-        let r = a % &b;
-        gcd(b, r)
-    }
-}
-
-fn prime_factors(n: &BigUint) -> BTreeMap<BigUint, u32> {
-    let mut factors = BTreeMap::new();
-    let one = BigUint::from(1u8);
-
-    if *n == one {
-        return factors;
-    }
-
-    if is_prime(n, n.to_u64_digits().len() * 16) {
-        factors.insert(n.clone(), 1);
-        return factors;
-    }
-
-    for c in 1u32.. {
-        let mut xi = BigUint::from(2u8);
-        let mut x2i = xi.clone();
-        let f = |x: &BigUint| -> BigUint { ((x * x) + c) % n };
-        let mut d = one.clone();
-
-        while &d == &one {
-            xi = f(&xi);
-            x2i = f(&f(&x2i));
-            d = gcd(if &xi > &x2i {&xi - &x2i} else {&x2i - &xi}, n.clone())
-        }
-        if d < *n {
-            for (k, v) in prime_factors(&d) {
-                *factors.entry(k).or_default() += v;
-            }
-
-            for (k, v) in prime_factors(&(n/&d)) {
-                *factors.entry(k).or_default() += v;
-            }
-
-            break
-        }
-    }
-
-    factors
-}
-
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
-    for (q,exp) in prime_factors(&n) {
+    for (q,exp) in factorize(n.clone()) {
         for _ in 0..exp {
             let candidate = &n / &q;
             if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
