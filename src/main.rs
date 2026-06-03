@@ -1,8 +1,9 @@
+use miller_rabin::is_prime;
 use num_bigint::*;
 use rayon::prelude::*;
 use std::hash::*;
 use std::time::Instant;
-use std::vec::*;
+use std::collections::BTreeMap;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -62,20 +63,50 @@ fn step(
     }
 }
 
-fn prime_factors(mut n: BigUint) -> Vec<BigUint> {
-    let mut factors = Vec::new();
-    let mut d = BigUint::from(2u8);
+fn gcd(a: BigUint, b: BigUint) -> BigUint {
+    if &b == &BigUint::ZERO {
+        a
+    } else {
+        let r = a % &b;
+        gcd(b, r)
+    }
+}
 
-    while &d * &d <= n {
-        while &n % &d == BigUint::ZERO {
-            factors.push(d.clone());
-            n /= &d;
-        }
-        d += 1u8;
+fn prime_factors(n: &BigUint) -> BTreeMap<BigUint, u32> {
+    let mut factors = BTreeMap::new();
+    let one = BigUint::from(1u8);
+
+    if *n == one {
+        return factors;
     }
 
-    if n > BigUint::from(1u8) {
-        factors.push(n);
+    if is_prime(n, n.to_u64_digits().len() / 4) {
+        factors.insert(n.clone(), 1);
+        return factors;
+    }
+
+    for c in 1u32.. {
+        let mut xi = BigUint::from(2u8);
+        let mut x2i = xi.clone();
+        let f = |x: &BigUint| -> BigUint { ((x * x) + c) % n };
+        let mut d = one.clone();
+
+        while &d == &one {
+            xi = f(&xi);
+            x2i = f(&f(&x2i));
+            d = gcd(if &xi > &x2i {&xi - &x2i} else {&x2i - &xi}, n.clone())
+        }
+        if d < *n {
+            for (k, v) in prime_factors(&d) {
+                *factors.entry(k).or_default() += v;
+            }
+
+            for (k, v) in prime_factors(&(n/&d)) {
+                *factors.entry(k).or_default() += v;
+            }
+
+            break
+        }
     }
 
     factors
@@ -83,10 +114,12 @@ fn prime_factors(mut n: BigUint) -> Vec<BigUint> {
 
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
-    for q in prime_factors(n.clone()) {
-        let candidate = &n / &q;
-        if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
-            n = candidate;
+    for (q,exp) in dbg!(prime_factors(&n)) {
+        for _ in 0..exp {
+            let candidate = &n / &q;
+            if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
+                n = candidate;
+            }
         }
     }
 
@@ -94,7 +127,7 @@ fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
 }
 
 fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
-    debug_assert!(BigUint::ZERO <= *a && a < n && BigUint::ZERO <= *b && a < n);
+    assert!(BigUint::ZERO <= *a && a < n && BigUint::ZERO <= *b && a < n);
     if a > b {
         a - b
     } else {
