@@ -80,7 +80,7 @@ fn prime_factors(n: &BigUint) -> BTreeMap<BigUint, u32> {
         return factors;
     }
 
-    if is_prime(n, n.to_u64_digits().len() / 4) {
+    if is_prime(n, n.to_u64_digits().len() * 16) {
         factors.insert(n.clone(), 1);
         return factors;
     }
@@ -114,7 +114,7 @@ fn prime_factors(n: &BigUint) -> BTreeMap<BigUint, u32> {
 
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
-    for (q,exp) in dbg!(prime_factors(&n)) {
+    for (q,exp) in prime_factors(&n) {
         for _ in 0..exp {
             let candidate = &n / &q;
             if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
