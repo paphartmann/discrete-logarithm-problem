@@ -1,5 +1,5 @@
 [package]
-name = "pollard-rho"
+name = "discrete-logarithm-problem"
 edition = "2024"
 
 [dependencies]

@@ -1,66 +1,12 @@
-use num_prime::nt_funcs::factorize;
-use num_bigint::*;
-use rayon::prelude::*;
-use std::hash::*;
 use std::time::Instant;
+use num_prime::nt_funcs::factorize;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
-use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::file::parameters;
+use crate::{file::parameters, pollard_rho_log::find_log};
 
 mod file;
-
-static STOP: AtomicBool = AtomicBool::new(false);
-
-fn step(
-    x: &mut BigUint,
-    a: &mut BigUint,
-    b: &mut BigUint,
-    p: &BigUint,
-    pub_a: &BigUint,
-    alpha: &BigUint,
-    q: &BigUint) {
-    let remainder = (&*x % 3u8).to_u8().unwrap();
-
-    match remainder {
-        0 => {
-            *x *= pub_a;
-            *x %= p;
-
-            *b += 1u8;
-            if *b == *q {
-                *b = BigUint::ZERO;
-            }
-        }
-
-        1 => {
-            *x = &*x * &*x;
-            *x %= p;
-
-            *a <<= 1;
-            if *a >= *q {
-                *a -= q;
-            }
-
-            *b <<= 1;
-            if *b >= *q {
-                *b -= q;
-            }
-        }
-
-        2 => {
-            *x *= alpha;
-            *x %= p;
-
-            *a += 1u8;
-            if *a == *q {
-                *a = BigUint::ZERO;
-            }
-        }
-        _ => unreachable!()
-    }
-}
+mod pollard_rho_log;
 
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
@@ -74,66 +20,6 @@ fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     }
 
     n
-}
-
-fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
-    assert!(BigUint::ZERO <= *a && a < n && BigUint::ZERO <= *b && a < n);
-    if a > b {
-        a - b
-    } else {
-        n - (b - a)
-    }
-}
-
-fn try_seed(
-    i: u64,
-    p: &BigUint,
-    alpha: &BigUint,
-    pub_a: &BigUint,
-    pub_b: &BigUint,
-    n: &BigUint,
-) -> Option<BigUint> {
-    // println!("{i}");
-    let mut hasher = DefaultHasher::new();
-    hasher.write_u64(i);
-    let mut ai = hasher.finish().to_biguint()? % n;
-    hasher.write_u64(1);
-    let mut bi = hasher.finish().to_biguint()? % n;
-    let mut xi = (alpha.modpow(&ai, p) * pub_a.modpow(&bi, p)) % p;
-
-    let mut x2i = xi.clone();
-    let mut a2i = ai.clone();
-    let mut b2i = bi.clone();
-
-    loop {
-        step(&mut xi, &mut ai, &mut bi, p, pub_a, alpha, n);
-
-        step(&mut x2i, &mut a2i, &mut b2i, p, pub_a, alpha, n);
-        step(&mut x2i, &mut a2i, &mut b2i, p, pub_a, alpha, n);
-
-        if xi == x2i {
-            break;
-        } else if STOP.load(Ordering::Relaxed) {
-            return None
-        }
-    }
-
-    let r = sub_mod(&bi, &b2i, n);
-
-    if r == BigUint::ZERO {
-        return None;
-    }
-
-    let r_inv = r.modinv(n)?;
-
-    let a_priv_key = (r_inv * sub_mod(&a2i, &ai, n)) % n;
-
-    if alpha.modpow(&a_priv_key, p) != *pub_a {
-        None
-    } else {
-        STOP.store(true, Ordering::Relaxed);
-        Some(pub_b.modpow(&a_priv_key, p))
-    }
 }
 
 fn main() {
@@ -150,18 +36,25 @@ fn main() {
     println!("B\t= {pub_b}");
 
     let begin = Instant::now();
+    let q = ord(&alpha, &p);
+    let fact_q = factorize(q.clone());
+    let mut xis = Vec::new();
+    for (pi,ei) in fact_q {
+        let piei = pi.pow(ei.to_u32().unwrap());
+        let gi = alpha.modpow(&(&q/&piei), &p);
+        let hi = pub_a.modpow(&(&q/&piei), &p);
+        xis.push((find_log(&p, &gi, &hi, &piei),piei));
+    }
 
-    let n = ord(&alpha, &p);
-    println!("ord\t= {n}");
-    
-    let result = (1u64..u64::MAX)
-        .into_par_iter()
-        .find_map_any(|i| {
-            try_seed(i, &p, &alpha, &pub_a, &pub_b, &n)
-        });
+    let priv_a = xis.into_iter().map(|(xi,ni)| -> BigUint {
+        let bign_i = &q/&ni;
+        xi * &bign_i * bign_i.modinv(&ni).unwrap()
+    }).sum();
 
     let end = Instant::now();
 
-    println!("k_ab\t= {}", result.unwrap());
-    println!("It took {} minutes", (end - begin).as_secs_f32() / 60.0)
+    let k_ab = pub_b.modpow(&priv_a, &p);
+    assert_eq!(pub_a, alpha.modpow(&priv_a, &p), "Algorithm found wrong k_ab");
+    println!("k_ab\t= {}", k_ab);
+    println!("It took {} minutes", (end - begin).as_secs_f32() / 60.0);
 }
