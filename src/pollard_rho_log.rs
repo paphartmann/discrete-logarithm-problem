@@ -53,7 +53,8 @@ fn step(
 }
 
 fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
-    if a > b {
+    debug_assert!(a < n && b < n);
+    if a >= b {
         a - b
     } else {
         n - (b - a)
@@ -105,6 +106,7 @@ fn pollard_rho(
         stop_cond.store(true, Ordering::Relaxed);
         Some(result)
     } else {
+        eprintln!("Algorithm found wrong logarithm, continuing...");
         None
     }
 }
