@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use num_bigint::{BigUint, ToBigUint};
-use std::{hash::*, hint::unreachable_unchecked, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{hash::*, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 use num_traits::ToPrimitive;
 
 fn step(
@@ -48,7 +48,7 @@ fn step(
                 *a = BigUint::ZERO;
             }
         }
-        _ => unsafe {unreachable_unchecked()}
+        _ => unreachable!()
     }
 }
 
