@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use num_bigint::{BigUint, ToBigUint};
-use std::{hash::*, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{hash::*, hint::unreachable_unchecked, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 use num_traits::ToPrimitive;
 
 fn step(
@@ -11,7 +11,7 @@ fn step(
     beta: &BigUint,
     alpha: &BigUint,
     q: &BigUint) {
-    let remainder = (&*x % 3u8).to_u8().unwrap();
+    let remainder = unsafe {(&*x % 3u8).to_u8().unwrap_unchecked()};
 
     match remainder {
         0 => {
@@ -48,7 +48,7 @@ fn step(
                 *a = BigUint::ZERO;
             }
         }
-        _ => unreachable!()
+        _ => unsafe {unreachable_unchecked()}
     }
 }
 
