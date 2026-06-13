@@ -23,12 +23,9 @@ fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
 }
 
 fn main() {
-    let number_problem_str = std::env::args_os().nth(1).unwrap_or_default();
-    if number_problem_str.is_empty() {
-        panic!("usage: pollard-rho <problem number>")
-    }
+    let number_problem_str = std::env::args().nth(1).expect("usage: discrete-logarithm-problem <number>");
 
-    let number_problem = number_problem_str.into_string().unwrap().parse::<u32>().unwrap();
+    let number_problem = number_problem_str.parse::<u32>().expect("argument should be a number");
     let (p, alpha, pub_a, pub_b) = parameters(number_problem, "desafios.txt");
     println!("p\t= {p}");
     println!("alpha\t= {alpha}");
@@ -37,8 +34,7 @@ fn main() {
 
     let begin = Instant::now();
     let q = ord(&alpha, &p);
-    let xis: Vec<_> = factorize(q.clone())
-        .into_iter()
+    let xis: Vec<_> = factorize(q.clone()).into_iter()
         .map(|(pi,ei)| -> (BigUint, BigUint) {
             let piei = pi.pow(ei.to_u32().unwrap());
             let gi = alpha.modpow(&(&q/&piei), &p);
@@ -47,8 +43,7 @@ fn main() {
         })
         .collect();
 
-    let priv_a = xis
-        .into_iter()
+    let priv_a = xis.into_iter()
         .map(|(xi,ni)| -> BigUint {
             let bign_i = &q/&ni;
             xi * &bign_i * bign_i.modinv(&ni).unwrap()
@@ -60,5 +55,12 @@ fn main() {
     let k_ab = pub_b.modpow(&priv_a, &p);
     assert_eq!(pub_a, alpha.modpow(&priv_a, &p), "Algorithm found wrong k_ab");
     println!("k_ab\t= {}", k_ab);
-    println!("It took {} minutes", (end - begin).as_secs_f32() / 60.0);
+    println!("It took {}", {
+            let secs = (end - begin).as_secs_f32();
+            if secs > 60.0 {
+                format!("{} minutes", secs / 60.0)
+            } else {
+                format!("{} seconds", secs)
+            }
+        });
 }
