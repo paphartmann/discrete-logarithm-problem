@@ -37,19 +37,23 @@ fn main() {
 
     let begin = Instant::now();
     let q = ord(&alpha, &p);
-    let fact_q = factorize(q.clone());
-    let mut xis = Vec::new();
-    for (pi,ei) in fact_q {
-        let piei = pi.pow(ei.to_u32().unwrap());
-        let gi = alpha.modpow(&(&q/&piei), &p);
-        let hi = pub_a.modpow(&(&q/&piei), &p);
-        xis.push((find_log(&p, &gi, &hi, &piei),piei));
-    }
+    let xis: Vec<_> = factorize(q.clone())
+        .into_iter()
+        .map(|(pi,ei)| -> (BigUint, BigUint) {
+            let piei = pi.pow(ei.to_u32().unwrap());
+            let gi = alpha.modpow(&(&q/&piei), &p);
+            let hi = pub_a.modpow(&(&q/&piei), &p);
+            (find_log(&p, &gi, &hi, &piei),piei)
+        })
+        .collect();
 
-    let priv_a = xis.into_iter().map(|(xi,ni)| -> BigUint {
-        let bign_i = &q/&ni;
-        xi * &bign_i * bign_i.modinv(&ni).unwrap()
-    }).sum();
+    let priv_a = xis
+        .into_iter()
+        .map(|(xi,ni)| -> BigUint {
+            let bign_i = &q/&ni;
+            xi * &bign_i * bign_i.modinv(&ni).unwrap()
+        })
+        .sum();
 
     let end = Instant::now();
 
