@@ -1,7 +1,9 @@
 use rayon::prelude::*;
 use num_bigint::{BigUint, ToBigUint};
-use std::{hash::*, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{collections::HashMap, hash::*, sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}};
 use num_traits::ToPrimitive;
+
+type SharedList = Arc<Mutex<HashMap<BigUint, (BigUint, BigUint)>>>;
 
 fn step(
     x: &mut BigUint,
@@ -62,33 +64,38 @@ fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
 }
 
 fn pollard_rho(
-    i: u64,
+    i: u32,
     p: &BigUint,
     alpha: &BigUint,
     beta: &BigUint,
     ord: &BigUint,
-    stop_cond: Arc<AtomicBool>
+    stop_cond: Arc<AtomicBool>,
+    shared_list: SharedList
 ) -> Option<BigUint> {
-    // println!("{i}");
+    let dp_bits = ord.bits().saturating_div(2).saturating_sub(8);
     let mut hasher = DefaultHasher::new();
-    hasher.write_u64(i);
+    hasher.write_u32(i);
     let mut ai = hasher.finish().to_biguint()? % ord;
-    hasher.write_u64(1);
+    hasher.write_u32(1);
     let mut bi = hasher.finish().to_biguint()? % ord;
     let mut xi = (alpha.modpow(&ai, p) * beta.modpow(&bi, p)) % p;
 
-    let mut x2i = xi.clone();
-    let mut a2i = ai.clone();
-    let mut b2i = bi.clone();
+    let a2i: BigUint;
+    let b2i: BigUint;
 
     loop {
         step(&mut xi, &mut ai, &mut bi, p, beta, alpha, ord);
 
-        step(&mut x2i, &mut a2i, &mut b2i, p, beta, alpha, ord);
-        step(&mut x2i, &mut a2i, &mut b2i, p, beta, alpha, ord);
-
-        if xi == x2i {
-            break;
+        if xi.trailing_zeros().unwrap_or_default() >= dp_bits {
+            let mut list = shared_list.lock().unwrap();
+            if let Some((cand_a,cand_b)) = list.get(&xi) {
+                a2i = cand_a.clone();
+                b2i = cand_b.clone();
+                break
+            } else {
+                list.insert(xi, (ai,bi));
+                return None
+            }
         } else if stop_cond.load(Ordering::Relaxed) {
             return None
         }
@@ -118,8 +125,9 @@ pub fn find_log(
     ord: &BigUint,
 ) -> BigUint {
     let stop = Arc::new(AtomicBool::new(false));
+    let shared_list = SharedList::new(Mutex::new(HashMap::new()));
 
-    (1u64..u64::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
-        pollard_rho(i, p, alpha, beta, ord, stop.clone())
+    (0u32..u32::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
+        pollard_rho(i, p, alpha, beta, ord, Arc::clone(&stop), Arc::clone(&shared_list))
     }).unwrap()
 }
