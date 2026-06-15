@@ -15,7 +15,12 @@ O ataque foi feito usando técnicas conhecidas para resolver o problema do logar
 
 \section{Ataques utilizados}
 \subsection{Pohlig-Hellman}
+Pohlig-Hellman é um algoritmo que divide o problema do logaritmo discreto original em problemas menores e usa o Teorema Chinês do Resto para combinar os resultados.
+Cada sub-problema foi resolvido usando Pollard rho.
 
 \subsection{Pohllard rho para logaritmos}
+Para achar o logaritmo, o algoritmo tenta achar a, b, A, B tal que $\alpha^a\beta^b=\alpha^A\beta^B$, onde $\alpha$ é o gerador do grupo e $\beta$ é o resultado de $\alpha^x$ mod n usando algum algoritmo de detecção de ciclos.
+Para fazer isso, foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória.
+
 
 \end{document}
