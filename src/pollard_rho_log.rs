@@ -1,9 +1,9 @@
+use dashmap::DashMap;
+use fxhash::hash64;
 use rayon::prelude::*;
 use num_bigint::{BigUint, ToBigUint};
-use std::{collections::HashMap, hash::*, sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}};
+use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}};
 use num_traits::ToPrimitive;
-
-type SharedList = Arc<Mutex<HashMap<BigUint, (BigUint, BigUint)>>>;
 
 fn step(
     x: &mut BigUint,
@@ -70,30 +70,27 @@ fn pollard_rho(
     beta: &BigUint,
     ord: &BigUint,
     stop_cond: Arc<AtomicBool>,
-    shared_list: SharedList
+    shared_list: Arc<DashMap<BigUint, (BigUint, BigUint)>>
 ) -> Option<BigUint> {
-    let dp_bits = ord.bits().saturating_div(2).saturating_sub(8);
-    let mut hasher = DefaultHasher::new();
-    hasher.write_u32(i);
-    let mut ai = hasher.finish().to_biguint()? % ord;
-    hasher.write_u32(1);
-    let mut bi = hasher.finish().to_biguint()? % ord;
+    let mut ai = hash64(&i).to_biguint()? % ord;
+    let mut bi = hash64(&(i+1)).to_biguint()? % ord;
     let mut xi = (alpha.modpow(&ai, p) * beta.modpow(&bi, p)) % p;
 
     let a2i: BigUint;
     let b2i: BigUint;
+    let dp_bits = (ord.bits()/8 + 2) as u32;
 
     loop {
         step(&mut xi, &mut ai, &mut bi, p, beta, alpha, ord);
 
-        if xi.trailing_zeros().unwrap_or_default() >= dp_bits {
-            let mut list = shared_list.lock().unwrap();
-            if let Some((cand_a,cand_b)) = list.get(&xi) {
+        if hash64(&xi).leading_zeros() >= dp_bits {
+            if let Some(entry) = shared_list.get(&xi) {
+                let (cand_a, cand_b) = entry.value();
                 a2i = cand_a.clone();
                 b2i = cand_b.clone();
                 break
             } else {
-                list.insert(xi, (ai,bi));
+                shared_list.insert(xi, (ai,bi));
                 return None
             }
         } else if stop_cond.load(Ordering::Relaxed) {
@@ -124,10 +121,21 @@ pub fn find_log(
     beta: &BigUint,
     ord: &BigUint,
 ) -> BigUint {
-    let stop = Arc::new(AtomicBool::new(false));
-    let shared_list = SharedList::new(Mutex::new(HashMap::new()));
+    if ord.bits() <= 20 {
+        let mut i = BigUint::ZERO;
+        while i <= *ord {
+            if alpha.modpow(&i, &p) == *beta {
+                return i
+            }
+            i += 1u8;
+        }
+        unreachable!()
+    } else {
+        let stop = Arc::new(AtomicBool::new(false));
+        let shared_list = Arc::new(DashMap::new());
 
-    (0u32..u32::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
-        pollard_rho(i, p, alpha, beta, ord, Arc::clone(&stop), Arc::clone(&shared_list))
-    }).unwrap()
+        (0u32..u32::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
+            pollard_rho(i, p, alpha, beta, ord, Arc::clone(&stop), Arc::clone(&shared_list))
+        }).unwrap()
+    }
 }
