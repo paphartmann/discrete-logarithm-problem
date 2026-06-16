@@ -1,0 +1,13 @@
+\begin{thebibliography}{1}
+
+\bibitem{hac}
+A.J. Menezes and P.C. van Oorschot.
+\newblock {\em Handbook of Applied Cryptography}.
+\newblock CRC Press, 1996.
+
+\bibitem{oorschot+wiener}
+P.C. van Oorschot and M.J. Wiener.
+\newblock Parallel collision search with cryptanalytic applications.
+\newblock 1996.
+
+\end{thebibliography}

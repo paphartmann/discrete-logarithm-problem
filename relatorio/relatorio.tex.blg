@@ -1,0 +1,5 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'relatorio.tex.blg'
+[127] biber:342> INFO - === Tue Jun 16, 2026, 11:26:33
+[301] Utils.pm:468> ERROR - Cannot find 'relatorio.tex.bcf'!
+[302] Biber.pm:137> INFO - ERRORS: 1

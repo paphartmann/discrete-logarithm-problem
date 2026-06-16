@@ -11,6 +11,8 @@
 \begin{abstract}
 O objetivo deste trabalho é atacar cenários onde seria utilizado o protocolo Diffie-Hellman.
 O ataque foi feito usando técnicas conhecidas para resolver o problema do logaritmo discreto, o Pohlig-Hellman e Pohllard rho para logaritmos.
+O problema do logaritmo discreto é definido da seguinte forma.
+Temos elementos $\alpha,\beta,n$ tal que $\beta \equiv \alpha^\gamma \pmod n$ e o objetivo é achar $\gamma$.
 \end{abstract}
 
 \section{Ataques utilizados}
@@ -19,8 +21,17 @@ Pohlig-Hellman é um algoritmo que divide o problema do logaritmo discreto origi
 Cada sub-problema foi resolvido usando Pollard rho.
 
 \subsection{Pohllard rho para logaritmos}
-Para achar o logaritmo, o algoritmo tenta achar a, b, A, B tal que $\alpha^a\beta^b=\alpha^A\beta^B$, onde $\alpha$ é o gerador do grupo e $\beta$ é o resultado de $\alpha^x$ mod n usando algum algoritmo de detecção de ciclos.
-Para fazer isso, foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória.
+Para achar o logaritmo, o algoritmo tenta achar $a,b,A,B$ tal que $\alpha^a\beta^b=\alpha^A\beta^B$, usando algum algoritmo de detecção de ciclos.
+Foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória onde a invariante é $x_i=\alpha^{a_i}\beta^{b_i}$.
+Para achar uma colisão foi utilizado uma técnica proposta por van Oorschot e Wiener \cite{oorschot+wiener}.
+A implementação utilizada da técnica usa uma tabela hash para guardar alguns elementos da sequência dado por uma propriedade facilmente testável.
+Quando um $x_i$ com essa propriedade é encontrado o algoritmo verifica se esse número está na tabela.
+Se o estiver na tabela, há uma possível colisão.
+Se não estiver insere.
+Se houver uma colisão, temos uma equação onde o $\gamma$ pode ser recuperado.
 
+\nocite{hac}
+\bibliographystyle{plain}
+\bibliography{citations}
 
 \end{document}

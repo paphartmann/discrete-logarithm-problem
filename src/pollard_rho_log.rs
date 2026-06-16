@@ -121,7 +121,7 @@ pub fn find_log(
     beta: &BigUint,
     ord: &BigUint,
 ) -> BigUint {
-    if ord.bits() <= 20 {
+    if ord.bits() <= 16 {
         let mut i = BigUint::ZERO;
         while i <= *ord {
             if alpha.modpow(&i, &p) == *beta {
