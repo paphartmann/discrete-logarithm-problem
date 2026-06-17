@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage[portuguese]{babel}
+\usepackage{pgfplots}
 
 \title{Trabalho Prático - Confiabilidade e Segurança de Software}
 
@@ -10,7 +11,7 @@
 \maketitle
 \begin{abstract}
 O objetivo deste trabalho é atacar cenários onde seria utilizado o protocolo Diffie-Hellman.
-O ataque foi feito usando técnicas conhecidas para resolver o problema do logaritmo discreto, o Pohlig-Hellman e Pohllard rho para logaritmos.
+O ataque foi feito usando técnicas conhecidas para resolver o problema do logaritmo discreto, o Pohlig-Hellman e Pollard rho para logaritmos.
 O problema do logaritmo discreto é definido da seguinte forma.
 Temos elementos $\alpha,\beta,n$ tal que $\beta \equiv \alpha^\gamma \pmod n$ e o objetivo é achar $\gamma$.
 \end{abstract}
@@ -20,7 +21,7 @@ Temos elementos $\alpha,\beta,n$ tal que $\beta \equiv \alpha^\gamma \pmod n$ e 
 Pohlig-Hellman é um algoritmo que divide o problema do logaritmo discreto original em problemas menores e usa o Teorema Chinês do Resto para combinar os resultados.
 Cada sub-problema foi resolvido usando Pollard rho.
 
-\subsection{Pohllard rho para logaritmos}
+\subsection{Pollard rho para logaritmos}
 Para achar o logaritmo, o algoritmo tenta achar $a,b,A,B$ tal que $\alpha^a\beta^b=\alpha^A\beta^B$, usando algum algoritmo de detecção de ciclos.
 Foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória onde a invariante é $x_i=\alpha^{a_i}\beta^{b_i}$.
 Para achar uma colisão foi utilizado uma técnica proposta por van Oorschot e Wiener \cite{oorschot+wiener}.
@@ -29,6 +30,47 @@ Quando um $x_i$ com essa propriedade é encontrado o algoritmo verifica se esse 
 Se o estiver na tabela, há uma possível colisão.
 Se não estiver insere.
 Se houver uma colisão, temos uma equação onde o $\gamma$ pode ser recuperado.
+
+\subsection{Complexidade}
+A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ é maior fator primo de $n$.
+
+\section{Gráfico de execução}
+\begin{tikzpicture}
+\begin{semilogyaxis} [
+	xlabel={Bits em $p$},
+	ylabel={Tempo [Segundos]},
+	xmin=32, xmax=1024,
+	ymin=0, ymax=3600,
+]
+
+\addplot[
+	color=blue,
+	mark=o,
+	]
+	coordinates{
+		(32, 0.002)(40, 0.0005)(48, 0.001)(64, 0.008)(80,0.02)(96,0.04)(112,0.1)(128,0.49)
+	};
+
+\addplot[
+	color=red,
+	mark=o,
+	]
+	coordinates{
+		(32, 0.004)(40, 0.03)(48, 0.3)(64, 89.1)
+	};
+
+\end{semilogyaxis}
+\end{tikzpicture}
+
+\section{Infraestrutura Computacional}
+\begin{itemize}
+	\item Modelo da CPU: Intel i7-1255U.
+	\item 12 núcleos lógicos no total.
+	\item P-cores: 2 núcleos físicos e 4 núcleos lógicos.
+	\item E-cores: 8 núcleos físicos.
+	\item Memória RAM: 16 GiB.
+	\item Sistema operacional: Linux 7.0.10
+\end{itemize}
 
 \nocite{hac}
 \bibliographystyle{plain}

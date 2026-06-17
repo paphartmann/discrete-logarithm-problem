@@ -55,12 +55,5 @@ fn main() {
     let k_ab = pub_b.modpow(&priv_a, &p);
     assert_eq!(pub_a, alpha.modpow(&priv_a, &p), "Algorithm found wrong k_ab");
     println!("k_ab\t= {}", k_ab);
-    println!("It took {}", {
-            let secs = (end - begin).as_secs_f32();
-            if secs > 60.0 {
-                format!("{} minutes", secs / 60.0)
-            } else {
-                format!("{} seconds", secs)
-            }
-        });
+    println!("It took {} seconds", (end - begin).as_secs_f32());
 }

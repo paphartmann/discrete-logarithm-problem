@@ -64,7 +64,7 @@ fn sub_mod(a: &BigUint, b: &BigUint, n: &BigUint) -> BigUint {
 }
 
 fn pollard_rho(
-    i: u32,
+    i: u64,
     p: &BigUint,
     alpha: &BigUint,
     beta: &BigUint,
@@ -134,7 +134,7 @@ pub fn find_log(
         let stop = Arc::new(AtomicBool::new(false));
         let shared_list = Arc::new(DashMap::new());
 
-        (0u32..u32::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
+        (0u64..u64::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
             pollard_rho(i, p, alpha, beta, ord, Arc::clone(&stop), Arc::clone(&shared_list))
         }).unwrap()
     }
