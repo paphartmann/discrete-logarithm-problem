@@ -1,9 +1,10 @@
-use dashmap::DashMap;
 use fxhash::hash64;
 use rayon::prelude::*;
 use num_bigint::{BigUint, ToBigUint};
-use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{collections::BTreeMap, sync::{Arc, atomic::{AtomicBool, Ordering}, Mutex}};
 use num_traits::ToPrimitive;
+
+type SharedList = Arc<Mutex<BTreeMap<BigUint, (BigUint, BigUint)>>>;
 
 fn step(
     x: &mut BigUint,
@@ -70,7 +71,7 @@ fn pollard_rho(
     beta: &BigUint,
     ord: &BigUint,
     stop_cond: Arc<AtomicBool>,
-    shared_list: Arc<DashMap<BigUint, (BigUint, BigUint)>>
+    shared_list: SharedList
 ) -> Option<BigUint> {
     let mut ai = hash64(&i).to_biguint()? % ord;
     let mut bi = hash64(&(i+1)).to_biguint()? % ord;
@@ -84,14 +85,17 @@ fn pollard_rho(
         step(&mut xi, &mut ai, &mut bi, p, beta, alpha, ord);
 
         if hash64(&xi).leading_zeros() >= dp_bits {
-            if let Some(entry) = shared_list.get(&xi) {
-                let (cand_a, cand_b) = entry.value();
-                a2i = cand_a.clone();
-                b2i = cand_b.clone();
-                break
+            if let Ok(mut list) = shared_list.lock() {
+                if let Some((cand_a, cand_b)) = list.get(&xi) {
+                    a2i = cand_a.clone();
+                    b2i = cand_b.clone();
+                    break
+                } else {
+                    list.insert(xi, (ai,bi));
+                    return None
+                }
             } else {
-                shared_list.insert(xi, (ai,bi));
-                return None
+                panic!("Some thread panicked while holding lock")
             }
         } else if stop_cond.load(Ordering::Relaxed) {
             return None
@@ -132,7 +136,7 @@ pub fn find_log(
         unreachable!()
     } else {
         let stop = Arc::new(AtomicBool::new(false));
-        let shared_list = Arc::new(DashMap::new());
+        let shared_list = Arc::new(Mutex::new(BTreeMap::new()));
 
         (0u64..u64::MAX).into_par_iter().find_map_any(|i| -> Option<BigUint> {
             pollard_rho(i, p, alpha, beta, ord, Arc::clone(&stop), Arc::clone(&shared_list))
