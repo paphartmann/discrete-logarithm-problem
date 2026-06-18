@@ -1,5 +1,5 @@
 [package]
-name = "discrete-logarithm-problem"
+name = "dlp"
 edition = "2024"
 
 [dependencies]

@@ -79,7 +79,7 @@ fn pollard_rho(
 
     let a2i: BigUint;
     let b2i: BigUint;
-    let dp_bits = (ord.bits()/8 + 2) as u32;
+    let dp_bits = (ord.bits()/8 + 4) as u32;
 
     loop {
         step(&mut xi, &mut ai, &mut bi, p, beta, alpha, ord);

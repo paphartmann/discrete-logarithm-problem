@@ -1,6 +1,8 @@
 \documentclass{article}
 \usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=3cm]{geometry}
 \usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 \title{Trabalho Prático - Confiabilidade e Segurança de Software}
 
@@ -25,7 +27,7 @@ Cada sub-problema foi resolvido usando Pollard rho.
 Para achar o logaritmo, o algoritmo tenta achar $a,b,A,B$ tal que $\alpha^a\beta^b=\alpha^A\beta^B$, usando algum algoritmo de detecção de ciclos.
 Foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória onde a invariante é $x_i=\alpha^{a_i}\beta^{b_i}$.
 Para achar uma colisão foi utilizado uma técnica proposta por van Oorschot e Wiener \cite{oorschot+wiener}.
-A implementação utilizada da técnica usa uma tabela hash para guardar alguns elementos da sequência dado por uma propriedade facilmente testável.
+A implementação utilizada da técnica usa uma B-Tree para guardar alguns elementos da sequência dado por uma propriedade facilmente testável.
 Quando um $x_i$ com essa propriedade é encontrado o algoritmo verifica se esse número está na tabela.
 Se o estiver na tabela, há uma possível colisão.
 Se não estiver insere.
@@ -39,8 +41,9 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 \begin{semilogyaxis} [
 	xlabel={Bits em $p$},
 	ylabel={Tempo [Segundos]},
-	xmin=32, xmax=1024,
-	ymin=0, ymax=3600,
+	width=0.9\textwidth,
+	height=0.5\textwidth,
+	legend pos=north east
 ]
 
 \addplot[
@@ -48,8 +51,9 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	mark=o,
 	]
 	coordinates{
-		(32, 0.002)(40, 0.0005)(48, 0.001)(64, 0.008)(80,0.02)(96,0.04)(112,0.1)(128,0.49)
+		(32, 0.002)(40, 0.0005)(48, 0.001)(64, 0.008)(80,0.02)(96,0.04)(112,0.1)(128,0.4)(256,0.02)(512, 0.07)(1024, 0.5)
 	};
+	\addlegendentry{Parâmetros \string"fáceis\string"}
 
 \addplot[
 	color=red,
@@ -58,6 +62,17 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	coordinates{
 		(32, 0.004)(40, 0.03)(48, 0.3)(64, 89.1)
 	};
+	\addlegendentry{Parâmetros \string"difíceis\string"}
+
+\addplot[
+	color=red,
+	mark=o,
+	dashed,
+	]
+	coordinates{
+		(64, 89.1)(80, 18191.5)(96,6054131.2)(112,1416666700.8)(128, 414375009984)(256, 129891511820351103748407705.6)
+	};
+	\addlegendentry{Projeção dos \string"difíceis\string"}
 
 \end{semilogyaxis}
 \end{tikzpicture}

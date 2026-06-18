@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{collections::BTreeMap, process::Command, str::FromStr, time::Instant};
 use num_prime::nt_funcs::factorize;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
@@ -8,9 +8,33 @@ use crate::{file::parameters, pollard_rho_log::find_log};
 mod file;
 mod pollard_rho_log;
 
+fn my_factorize(n: &BigUint) -> BTreeMap<BigUint, usize> {
+    let output_res = Command::new("factor")
+        .arg(n.to_string())
+        .output();
+
+    if let Ok(output) = output_res {
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        let mut factors = BTreeMap::new();
+        for factor in stdout
+            .split(':')
+            .nth(1)
+            .unwrap()
+            .split_whitespace()
+        {
+            let factor = BigUint::from_str(factor).unwrap();
+            *factors.entry(factor).or_insert(0) += 1;
+        }
+
+        factors
+    } else {
+        factorize(n.clone())
+    }
+}
+
 fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
     let mut n = p - 1u8;
-    for (q,exp) in factorize(n.clone()) {
+    for (q,exp) in my_factorize(&n) {
         for _ in 0..exp {
             let candidate = &n / &q;
             if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
@@ -34,7 +58,7 @@ fn main() {
 
     let begin = Instant::now();
     let q = ord(&alpha, &p);
-    let xis: Vec<_> = factorize(q.clone()).into_iter()
+    let xis: Vec<_> = my_factorize(&q).into_iter()
         .map(|(pi,ei)| -> (BigUint, BigUint) {
             let piei = pi.pow(ei.to_u32().unwrap());
             let gi = alpha.modpow(&(&q/&piei), &p);
