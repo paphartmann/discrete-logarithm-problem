@@ -32,20 +32,6 @@ fn my_factorize(n: &BigUint) -> BTreeMap<BigUint, usize> {
     }
 }
 
-fn ord(alpha: &BigUint, p: &BigUint) -> BigUint {
-    let mut n = p - 1u8;
-    for (q,exp) in my_factorize(&n) {
-        for _ in 0..exp {
-            let candidate = &n / &q;
-            if alpha.modpow(&candidate, p) == BigUint::from(1u8) {
-                n = candidate;
-            }
-        }
-    }
-
-    n
-}
-
 fn main() {
     let number_problem_str = std::env::args().nth(1).expect("usage: discrete-logarithm-problem <number>");
 
@@ -57,7 +43,7 @@ fn main() {
     println!("B\t= {pub_b}");
 
     let begin = Instant::now();
-    let q = ord(&alpha, &p);
+    let q = &p - 1u8;
     let xis: Vec<_> = my_factorize(&q).into_iter()
         .map(|(pi,ei)| -> (BigUint, BigUint) {
             let piei = pi.pow(ei.to_u32().unwrap());

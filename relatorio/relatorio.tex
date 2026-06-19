@@ -13,7 +13,7 @@
 \maketitle
 \begin{abstract}
 O objetivo deste trabalho é atacar cenários onde seria utilizado o protocolo Diffie-Hellman.
-O ataque foi feito usando técnicas conhecidas para resolver o problema do logaritmo discreto, o Pohlig-Hellman e Pollard rho para logaritmos.
+O ataque foi feito usando técnicas conhecidas para resolver o problema do logaritmo discreto, o Pohlig-Hellman e Rho de Pollard para logaritmos.
 O problema do logaritmo discreto é definido da seguinte forma.
 Temos elementos $\alpha,\beta,n$ tal que $\beta \equiv \alpha^\gamma \pmod n$ e o objetivo é achar $\gamma$.
 \end{abstract}
@@ -21,11 +21,12 @@ Temos elementos $\alpha,\beta,n$ tal que $\beta \equiv \alpha^\gamma \pmod n$ e 
 \section{Ataques utilizados}
 \subsection{Pohlig-Hellman}
 Pohlig-Hellman é um algoritmo que divide o problema do logaritmo discreto original em problemas menores e usa o Teorema Chinês do Resto para combinar os resultados.
-Cada sub-problema foi resolvido usando Pollard rho.
+Cada sub-problema foi resolvido usando Rho de Pollard.
 
-\subsection{Pollard rho para logaritmos}
+\subsection{Rho de Pollard para logaritmos}
 Para achar o logaritmo, o algoritmo tenta achar $a,b,A,B$ tal que $\alpha^a\beta^b=\alpha^A\beta^B$, usando algum algoritmo de detecção de ciclos.
 Foi definido uma função $f:x_i \mapsto x_{i+1}$ que define uma sequência pseudo-aleatória onde a invariante é $x_i=\alpha^{a_i}\beta^{b_i}$.
+
 Para achar uma colisão foi utilizado uma técnica proposta por van Oorschot e Wiener \cite{oorschot+wiener}.
 A implementação utilizada da técnica usa uma B-Tree para guardar alguns elementos da sequência dado por uma propriedade facilmente testável.
 Quando um $x_i$ com essa propriedade é encontrado o algoritmo verifica se esse número está na tabela.
@@ -34,9 +35,10 @@ Se não estiver insere.
 Se houver uma colisão, temos uma equação onde o $\gamma$ pode ser recuperado.
 
 \subsection{Complexidade}
-A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ é maior fator primo de $n$.
+A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ é maior fator primo de $n-1$.
 
 \section{Gráfico de execução}
+\subsection{Gráfico}
 \begin{tikzpicture}
 \begin{semilogyaxis} [
 	xlabel={Bits em $p$},
@@ -77,6 +79,10 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 \end{semilogyaxis}
 \end{tikzpicture}
 
+\subsection{Nota}
+O gráfico não possui pontos com mais de 256 bits nos cenários difíceis pois o tempo de execução para fatorar o número da ordem não acabou em tempo hábil.
+A fatoração do ordem é preciso para estimar o tempo de execução.
+
 \section{Infraestrutura Computacional}
 \begin{itemize}
 	\item Modelo da CPU: Intel i7-1255U.
@@ -86,6 +92,17 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	\item Memória RAM: 16 GiB.
 	\item Sistema operacional: Linux 7.0.10
 \end{itemize}
+
+\section{Análise dos Resultados}
+No gráfico foi classificado os cenários em fáceis e difíceis.
+Essa classificação veio da observação que para todas as quantidades de bits um o tempo de execução era bem ágil e o outro não.
+Após isso se notou que todos os cenários que executavam rápido, a ordem do grupo tinha bastante fatores.
+Já os classificados como difíceis, tem dois fatores.
+Isso é fácilmente explicado dado o fato de que foi utilizado o algoritmo de Pohlig-Hellman, que se aproveita bastante de grupos que tem ordem com muitos fatores.
+
+Portanto fica claro que para utilizar o protocolo Diffie-Hellman é preciso escolher parâmetros que tenham um formato determinado.
+Mais especificamente, para usar o protcolo de tal forma que seja mais invulnerável ao algoritmo Pohlig-Hellman
+é preciso escolher a ordem do grupo que tenha o mínimo de fatores primos. Idealmente 2 e outro número primo grande.
 
 \nocite{hac}
 \bibliographystyle{plain}
