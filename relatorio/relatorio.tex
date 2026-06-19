@@ -40,12 +40,12 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 \section{Gráfico de execução}
 \subsection{Gráfico}
 \begin{tikzpicture}
-\begin{semilogyaxis} [
+\begin{loglogaxis} [
 	xlabel={Bits em $p$},
 	ylabel={Tempo [Segundos]},
 	width=0.9\textwidth,
 	height=0.5\textwidth,
-	legend pos=north east
+	legend pos=north west,
 ]
 
 \addplot[
@@ -76,12 +76,12 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	};
 	\addlegendentry{Projeção dos \string"difíceis\string"}
 
-\end{semilogyaxis}
+\end{loglogaxis}
 \end{tikzpicture}
 
 \subsection{Nota}
 O gráfico não possui pontos com mais de 256 bits nos cenários difíceis pois o tempo de execução para fatorar o número da ordem não acabou em tempo hábil.
-A fatoração do ordem é preciso para estimar o tempo de execução.
+A fatoração da ordem é preciso para estimar o tempo de execução.
 
 \section{Infraestrutura Computacional}
 \begin{itemize}
@@ -94,15 +94,19 @@ A fatoração do ordem é preciso para estimar o tempo de execução.
 \end{itemize}
 
 \section{Análise dos Resultados}
-No gráfico foi classificado os cenários em fáceis e difíceis.
-Essa classificação veio da observação que para todas as quantidades de bits um o tempo de execução era bem ágil e o outro não.
-Após isso se notou que todos os cenários que executavam rápido, a ordem do grupo tinha bastante fatores.
-Já os classificados como difíceis, tem dois fatores.
-Isso é fácilmente explicado dado o fato de que foi utilizado o algoritmo de Pohlig-Hellman, que se aproveita bastante de grupos que tem ordem com muitos fatores.
+No gráfico, os cenários foram classificados como fáceis ou difíceis.
+Essa classificação foi baseada na observação de que, para todas as quantidades de bits analisadas,
+alguns casos apresentavam tempos de execução muito menores do que outros.
 
-Portanto fica claro que para utilizar o protocolo Diffie-Hellman é preciso escolher parâmetros que tenham um formato determinado.
-Mais especificamente, para usar o protcolo de tal forma que seja mais invulnerável ao algoritmo Pohlig-Hellman
-é preciso escolher a ordem do grupo que tenha o mínimo de fatores primos. Idealmente 2 e outro número primo grande.
+Verificou-se que os cenários classificados como fáceis possuíam ordens de grupo com muitos fatores primos,
+enquanto os classificados como difíceis apresentavam apenas dois fatores.
+Esse comportamento é consistente com as características do algoritmo de Pohlig–Hellman,
+pois o algoritmo se beneficia da fatoração da ordem do grupo,
+tornando-se mais eficiente quando ela possui diversos fatores primos.
+
+Portanto, para reduzir a eficácia do algoritmo de Pohlig–Hellman em sistemas Diffie–Hellman,
+é importante escolher grupos cuja ordem possua poucos fatores primos.
+Idealmente, utiliza-se uma ordem da forma $2q$, onde $q$ é um número primo grande.
 
 \nocite{hac}
 \bibliographystyle{plain}
