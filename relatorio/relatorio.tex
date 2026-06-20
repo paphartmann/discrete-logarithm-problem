@@ -37,8 +37,8 @@ Se houver uma colisão, temos uma equação onde o $\gamma$ pode ser recuperado.
 \subsection{Complexidade}
 A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ é maior fator primo de $n-1$.
 
-\section{Gráfico de execução}
-\subsection{Gráfico}
+\section{Resultados}
+\subsection{Gráfico de execução}
 \begin{tikzpicture}
 \begin{loglogaxis} [
 	xlabel={Bits em $p$},
@@ -53,7 +53,17 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	mark=o,
 	]
 	coordinates{
-		(32, 0.002)(40, 0.0005)(48, 0.001)(64, 0.008)(80,0.02)(96,0.04)(112,0.1)(128,0.4)(256,0.02)(512, 0.07)(1024, 0.5)
+		(32, 0.002)
+		(40, 0.0005)
+		(48, 0.001)
+		(64, 0.008)
+		(80,0.02)
+		(96,0.04)
+		(112,0.1)
+		(128,0.4)
+		(256,0.02)
+		(512, 0.07)
+		(1024, 0.5)
 	};
 	\addlegendentry{Parâmetros \string"fáceis\string"}
 
@@ -62,7 +72,10 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	mark=o,
 	]
 	coordinates{
-		(32, 0.004)(40, 0.03)(48, 0.3)(64, 89.1)
+		(32, 0.004)
+		(40, 0.03)
+		(48, 0.3)
+		(64, 89.1)
 	};
 	\addlegendentry{Parâmetros \string"difíceis\string"}
 
@@ -72,16 +85,29 @@ A complexidade dos algoritmos combinados é de $\mathcal{O}(\sqrt p)$ onde $p$ �
 	dashed,
 	]
 	coordinates{
-		(64, 89.1)(80, 18191.5)(96,6054131.2)(112,1416666700.8)(128, 414375009984)(256, 129891511820351103748407705.6)
+		(64, 89.1)
+		(80, 18191.5)
+		(96,6054131.2)
+		(112,1416666700.8)
+		(128, 414375009984)
+		(256, 129891511820351103748407705)
+    	(512,2.29e58)
+    	(1024,9.66e121)
 	};
 	\addlegendentry{Projeção dos \string"difíceis\string"}
 
 \end{loglogaxis}
 \end{tikzpicture}
 
-\subsection{Nota}
-O gráfico não possui pontos com mais de 256 bits nos cenários difíceis pois o tempo de execução para fatorar o número da ordem não acabou em tempo hábil.
-A fatoração da ordem é preciso para estimar o tempo de execução.
+\subsection{Tabela de tempos}
+A seguir é a tabela dos tempos de execução dos cenários conseguidos:
+\begin{center}
+\begin{tabular}{c||c|c|c|c|c|c|c|c|c|c|c}
+Fáceis & 0.002 & 0.0005 & 0.001 & 0.008 & 0.02 & 0.04 & 0.1 & 0.4 & 0.02 & 0.07 & 0.5 \\
+\hline
+Difíceis & 0.004 & 0.03 & 0.3 & 89.1 & - & - & - & - & - & - & - \\
+\end{tabular}
+\end{center}
 
 \section{Infraestrutura Computacional}
 \begin{itemize}
