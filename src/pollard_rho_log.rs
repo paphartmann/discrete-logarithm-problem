@@ -128,7 +128,7 @@ pub fn find_log(
     if ord.bits() <= 16 {
         let mut i = BigUint::ZERO;
         while i <= *ord {
-            if alpha.modpow(&i, &p) == *beta {
+            if alpha.modpow(&i, p) == *beta {
                 return i
             }
             i += 1u8;
