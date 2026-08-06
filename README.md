@@ -1,6 +1,6 @@
 # Discrete Logarithm Problem (dlp)
 
-Implementation of algorithms to solve the discrete logarithm problem (DLP) in Rust using Pohlig–Hellman and Pollard's Rho for logarithms. This project was developed as a coursework assignment and includes challenge parameters, a solution file, and a written report in Portuguese.
+Rust implementation of algorithms to solve the discrete logarithm problem (DLP) using Pohlig–Hellman and Pollard's Rho for logarithms. The repository includes challenge parameters, a solution file, and source code to compute shared keys for given parameters.
 
 Author: Pedro Arthur Pamplona Hartmann
 
@@ -22,8 +22,6 @@ src/                # Rust source
   file.rs           # input parser for desafios.txt
 desafios.txt        # challenge parameters (scenarios C0..C22)
 solucao.txt         # expected output file for K_ab values (empty / exercise)
-relatorio/          # LaTeX report, PDF and bibliography
-.github/            # GitHub configuration
 ```
 
 ## Requirements
@@ -69,27 +67,10 @@ Notes:
 - The program performs a factorization of p-1; if `factor` is available it will call it, otherwise it will use the bundled Rust factorization routine.
 - For some scenarios (large p or unfavourable factorization of p-1) execution can be very slow or infeasible on commodity hardware.
 
-## Reproducing the report
-
-A LaTeX report is included in `relatorio/` (Portuguese). To regenerate the PDF (if you have LaTeX installed):
-
-```bash
-cd relatorio
-# common workflow (may vary depending on your latex toolchain)
-pdflatex relatorio.tex
-bibtex relatorio
-pdflatex relatorio.tex
-pdflatex relatorio.tex
-# or
-latexmk -pdf relatorio.tex
-```
-
-The PDF `relatorio.pdf` and `main.pdf` are already present in the directory.
-
 ## Tests / Data
 
 - Challenge parameters: `desafios.txt` contains scenarios C0..C22 (C0 is a small worked example with provided a, b and K_ab for sanity checking).
-- `solucao.txt` is intended to collect the computed K_ab values for the assignment.
+- `solucao.txt` is intended to collect the computed K_ab values.
 
 ## Design notes
 
@@ -108,13 +89,3 @@ See `Cargo.toml`. Key crates:
 ## Caveats & Security
 
 This implementation is for educational and experimental use only. It demonstrates cryptanalytic techniques against Diffie–Hellman groups with weak parameter choices (p where p-1 has small prime factors). Do not use these techniques to attack systems you do not own. Use responsibly.
-
-## Contributing
-
-If you'd like to improve the project:
-- Add tests and automation for running scenarios and verifying `solucao.txt`.
-- Add CI to build and run the small example (C0) as a smoke test.
-
-## License
-
-No license is provided in the repository. Add a LICENSE file if you intend to permit reuse.
